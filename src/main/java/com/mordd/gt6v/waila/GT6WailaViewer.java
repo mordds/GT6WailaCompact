@@ -20,6 +20,7 @@ import gregapi.fluid.FluidTankGT;
 import gregapi.recipes.Recipe;
 import gregapi.tileentity.base.TileEntityBase01Root;
 import gregapi.tileentity.connectors.MultiTileEntityAxle;
+import gregapi.tileentity.connectors.MultiTileEntityPipeFluid;
 import gregapi.tileentity.connectors.MultiTileEntityWireElectric;
 import gregapi.tileentity.multiblocks.MultiTileEntityMultiBlockPart;
 import gregapi.tileentity.tank.TileEntityBase08Barrel;
@@ -31,6 +32,7 @@ import gregtech.tileentity.energy.generators.MultiTileEntityGeneratorFluidBed;
 import gregtech.tileentity.energy.generators.MultiTileEntityGeneratorGas;
 import gregtech.tileentity.energy.generators.MultiTileEntityGeneratorLiquid;
 import gregtech.tileentity.energy.generators.MultiTileEntityGeneratorSolid;
+import gregtech.tileentity.energy.generators.MultiTileEntityMotorLiquid;
 import gregtech.tileentity.misc.MultiTileEntityFluidSpring;
 import gregtech.tileentity.misc.MultiTileEntityRock;
 import gregtech.tileentity.multiblocks.MultiTileEntityCrucible;
@@ -42,6 +44,7 @@ import gregtech.tileentity.tanks.MultiTileEntityJug;
 import gregtech.tileentity.tanks.MultiTileEntityMeasuringPot;
 import gregtech.tileentity.tools.MultiTileEntityAnvil;
 import gregtech.tileentity.tools.MultiTileEntityMixingBowl;
+import gregtech.tileentity.tools.MultiTileEntitySiftingTable;
 import gregtech.tileentity.tools.MultiTileEntitySmeltery;
 import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
@@ -95,6 +98,10 @@ public class GT6WailaViewer implements IWailaDataProvider {
 			registerBodyMethod(MultiTileEntityFluidSpring.class,"FluidSpringBody");
 			registerBodyMethod(MultiTileEntityMixingBowl.class,"MixingBowlBody");
 			registerBodyMethod(TileEntityBase08Barrel.class,"BarrelBody");
+			registerBodyMethod(MultiTileEntityPipeFluid.class,"FluidPipeBody");
+			registerBodyMethod(MultiTileEntitySiftingTable.class,"SiftingTableBody");
+			registerBodyMethod(MultiTileEntityMotorLiquid.class,"LiquidMotorBody");
+			
 		} catch (NoSuchMethodException | IllegalAccessException e) {
 			e.printStackTrace();
 		}
@@ -324,6 +331,52 @@ public class GT6WailaViewer implements IWailaDataProvider {
 		return currenttip;
 	}
 	
+	public static List<String> LiquidMotorBody(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config){
+		NBTTagCompound nbt = accessor.getNBTData();
+		int output = 0;
+		boolean active = false;
+		if(nbt.hasKey("gt.energy")) active = true;
+		double consumeRate = 0.0;
+		if(nbt.hasKey("gt.mte.id")) {
+			NBTTagCompound nbt2 = getDefaultNBT(nbt.getInteger("gt.mte.id"));
+			output = nbt2.getInteger("gt.output");
+		}
+		int cap = output == 0 ? 1 : output * 10;
+		
+		if(nbt.hasKey("gt.tank.0")) {
+			FluidStack fuel = FluidStack.loadFluidStackFromNBT(nbt.getCompoundTag("gt.tank.0"));
+			if(fuel != null && active) {
+				Iterator<Recipe> recipes = FM.Engine.mRecipeFluidMap.get(fuel.getFluid().getName()).iterator();
+				long fuelHeat = 0;
+				if(recipes != null && recipes.hasNext()){
+					Recipe recipe = recipes.next();
+					fuelHeat = recipe.mEUt * recipe.mDuration * -1;
+					FluidStack[] fluids = recipe.mFluidInputs;
+					for(int i = 0;i < fluids.length;i++){
+						String fName = FluidRegistry.getFluidName(fluids[i].getFluid());
+						if(fName == fuel.getFluid().getName()){
+							fuelHeat /= fluids[i].amount;
+							break;
+						}
+					}
+				}
+				consumeRate = output * 100 / fuelHeat / 100.0;
+			}
+			currenttip.add(I18n.format("gt6v.fluid.visual.fuel", WailaUtils.getSmallTankBarRenderString(fuel, cap)));
+			
+		}
+		
+		if(nbt.hasKey("gt.tank.1")) {
+			FluidStack stack = FluidStack.loadFluidStackFromNBT(nbt.getCompoundTag("gt.tank.1"));
+			currenttip.add(I18n.format("gt6v.fluid.visual.garbage", WailaUtils.getSmallTankBarRenderString(stack, cap)));
+		}
+		if(active) {
+			currenttip.add(I18n.format("gt6v.consume.burn", consumeRate));
+			currenttip.add(I18n.format("gt6v.out.ru", output));
+		}
+		return currenttip;
+	}
+	
 	public static List<String> LiquidBurningBoxBody(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config){
 		NBTTagCompound nbt = accessor.getNBTData();
 		int output = 1;
@@ -372,6 +425,45 @@ public class GT6WailaViewer implements IWailaDataProvider {
 		}
 		return currenttip;
 	}
+	
+	public static List<String> SiftingTableBody(ItemStack itemStack,List<String> currenttip,IWailaDataAccessor accessor,IWailaConfigHandler config){
+		NBTTagCompound nbt = accessor.getNBTData();
+		if(nbt.hasKey("gt.invlist")) {
+			NBTTagList list = (NBTTagList) nbt.getTag("gt.invlist");
+			if(list.tagCount() == 0) return currenttip;
+			int inSlot = -1;
+			StringBuilder builder = new StringBuilder();
+			builder.append(SpecialChars.RENDER);
+			builder.append("{gt6v.stacklist,");
+			builder.append(I18n.format("gt6v.item.out"));
+			builder.append(",3");
+			for(int i = 0;i < list.tagCount();i++) {
+				NBTTagCompound tag = list.getCompoundTagAt(i);
+				if(tag.getInteger("s") == 0) {
+					inSlot = i;
+				}
+				else {
+					ItemStack stack = ItemStack.loadItemStackFromNBT(tag);
+					builder.append(",");
+					builder.append(WailaUtils.encodeStack(stack));
+				}
+			}
+			builder.append("}");
+			if(inSlot != -1) {
+				ItemStack stack = ItemStack.loadItemStackFromNBT(list.getCompoundTagAt(inSlot));
+				boolean isBlock = stack.getItem() instanceof ItemBlock;
+				int mode = isBlock ? 0 : 1;
+				String invString = SpecialChars.RENDER + String.format("{gt6v.stack,%d,%s,%d,%d,%s}",mode,getRegistryName(stack),stack.stackSize,stack.getItemDamage(),I18n.format("gt6v.item.in"));
+				currenttip.add(invString);
+			}
+			if(inSlot == -1 || list.tagCount() > 1) {
+				currenttip.add(builder.toString());
+			}
+		}
+		return currenttip;
+	}
+	
+	
 	
 	public static List<String> BarrelBody(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config){
 		TileEntity te = accessor.getTileEntity();
@@ -529,12 +621,67 @@ public class GT6WailaViewer implements IWailaDataProvider {
 			if(nbt.hasKey("gt.tank.in."+i)) {
 				FluidStack stack = FluidStack.loadFluidStackFromNBT(nbt.getCompoundTag("gt.tank.in."+i));
 				currenttip.add(I18n.format("gt6v.fluid.in.slots", i + 1,getFluidStackString(stack)));
+				//FluidStack stack = null;
+				stack.writeToNBT(nbt);
 			}
 		}
 		for(int i = 0;i < 2;i++) {
 			if(nbt.hasKey("gt.tank.out."+i)) {
 				FluidStack stack = FluidStack.loadFluidStackFromNBT(nbt.getCompoundTag("gt.tank.out."+i));
 				currenttip.add(I18n.format("gt6v.fluid.out.slots", i + 1,getFluidStackString(stack)));
+			}
+		}
+		return currenttip;
+	}
+	
+	public static List<String> FluidPipeBody(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config) {
+		NBTTagCompound tag = accessor.getNBTData();
+		if(tag.hasKey("gt.mlast.8")) {
+			boolean shouldExit = false;
+			for(int i = 0;i < 3;i++) {
+				StringBuilder builder = new StringBuilder();
+				int j;
+				for(j = 0;j < 3;j++) {
+					if(tag.hasKey("gt.tank."+(i * 3 + j))) {
+						FluidStack stack = FluidStack.loadFluidStackFromNBT(tag.getCompoundTag("gt.tank."+(i * 3 + j)));
+						builder.append(getFluidStackString(stack));
+						builder.append(" | ");
+					}
+					else {
+						shouldExit = true;
+						break;
+					}
+				}
+				if(builder.length() != 0) {
+					builder.deleteCharAt(builder.length() - 2);
+					if(j == 1) currenttip.add(I18n.format("gt6v.fluid.pipe.b", i * 3 + 1,builder.toString()));
+					else currenttip.add(I18n.format("gt6v.fluid.pipe.a", i * 3 + 1,i * 3 + j,builder.toString()));
+				}
+				if(shouldExit) break;
+			}
+		}
+		else {
+			boolean shouldExit = false;
+			for(int i = 0;i < 2;i++) {
+				StringBuilder builder = new StringBuilder();
+				int j;
+				for(j = 0;j < 2;j++) {
+					if(tag.hasKey("gt.tank."+(i * 2 + j))) {
+						FluidStack stack = FluidStack.loadFluidStackFromNBT(tag.getCompoundTag("gt.tank."+(i * 2 + j)));
+						builder.append(getFluidStackString(stack));
+						builder.append(" | ");
+					}
+					else {
+						shouldExit = true;
+						break;
+					}
+				}
+				if(builder.length() != 0) {
+					builder.deleteCharAt(builder.length() - 2);
+					if(j == 1) currenttip.add(I18n.format("gt6v.fluid.pipe.b", i * 2 + 1,builder.toString()));
+					else currenttip.add(I18n.format("gt6v.fluid.pipe.a", i * 2 + 1,i * 2 + 2,builder.toString()));
+				}
+				if(shouldExit) break;
 			}
 		}
 		return currenttip;
@@ -725,35 +872,9 @@ public class GT6WailaViewer implements IWailaDataProvider {
 	public static void callbackRegister(IWailaRegistrar reg)
 	{
 		GT6WailaViewer viewer = new GT6WailaViewer();		
-		reg.registerNBTProvider(viewer, MultiTileEntitySmeltery.class);
-		reg.registerNBTProvider(viewer, TileEntityBase08Barrel.class);
-		reg.registerNBTProvider(viewer, MultiTileEntityRock.class);
-		reg.registerNBTProvider(viewer, MultiTileEntityBoilerTank.class);
-		reg.registerNBTProvider(viewer, MultiTileEntityGeneratorSolid.class);
-
-		reg.registerNBTProvider(viewer, MultiTileEntityGeneratorLiquid.class);
-		reg.registerNBTProvider(viewer, MultiTileEntityCrucible.class);
-		reg.registerNBTProvider(viewer, MultiTileEntityMultiBlockPart.class);
-		reg.registerNBTProvider(viewer, MultiTileEntityTurbineSteam.class);
-		reg.registerNBTProvider(viewer, TileEntity.class);
-		
-		reg.registerBodyProvider(viewer, MultiTileEntitySmeltery.class);
-		reg.registerBodyProvider(viewer, TileEntityBase08Barrel.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityRock.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityBoilerTank.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityGeneratorSolid.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityGeneratorLiquid.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityGeneratorFluidBed.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityCrucible.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityTank.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityMultiBlockPart.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityAnvil.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityEngineSteam.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityTurbineSteam.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityAxle.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityFluidSpring.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityWireElectric.class);
-		reg.registerBodyProvider(viewer, MultiTileEntityMixingBowl.class);
-		reg.registerBodyProvider(viewer, TileEntityBase08FluidContainer.class);
+		for(Class clazz : bodyMethods.keySet()) {
+			reg.registerBodyProvider(viewer, clazz);
+			reg.registerNBTProvider(viewer, clazz);
+		}
 	}
 }

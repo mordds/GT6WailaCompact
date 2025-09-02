@@ -41,3 +41,7 @@ gt6v.item.in=物品输入
 gt6v.item.out=物品输出
 gt6v.fluid.in.slots=输入流体%d: %s
 gt6v.fluid.out.slots=输出流体%d: %s
+gt6v.fluid.pipe.a=内容物%d-%d:%s
+gt6v.fluid.pipe.b=内容物%d:%s
+gt6v.fluid.visual.garbage=废气:%s
+gt6v.fluid.visual.fuel=燃料:%s

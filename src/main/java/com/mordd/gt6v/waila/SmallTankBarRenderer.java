@@ -72,10 +72,13 @@ public class SmallTankBarRenderer implements IWailaTooltipRenderer {
         	this.mc.getTextureManager().bindTexture(TextureMap.locationBlocksTexture);
         	DisplayUtil2.drawTexturedModelFluid(1, 1, f, progress+1, 7);
         } 
-        DisplayUtil2.draw2ColorText(String.format("%d / %d L %s", currentValue,maxValue,f == null?"":I18n.format(f.getUnlocalizedName())), 4, 0, false,Textcolor,0xFFFFFF,progress+1);
         
         this.mc.getTextureManager().bindTexture(this.texture);
         DisplayUtil.drawTexturedModalRect(0, 0, 0, 57, 129, 10, 129, 10);
+        
+        DisplayUtil2.draw2ColorText(String.format("%d / %d L %s", currentValue,maxValue,f == null?"":I18n.format(f.getUnlocalizedName())), 4, 0, false,Textcolor,0xFFFFFF,progress+1);
+        
+        
         
     }
 }

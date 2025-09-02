@@ -9,16 +9,91 @@ import com.mordd.gt6v.GT6Viewer;
 
 import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.common.registry.GameRegistry.UniqueIdentifier;
+import mcp.mobius.waila.api.SpecialChars;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidStack;
 
 public class WailaUtils {
 	public static Map<String,Integer> fluidColorBuffer = new HashMap<String,Integer>();
-
+	
+	public static String getStackListRenderString(String tooltip,int rows,List<ItemStack> stacks) {
+		StringBuilder builder = new StringBuilder();
+		builder.append(SpecialChars.RENDER);
+		builder.append("{gt6v.stacklist,");
+		builder.append(tooltip);
+		builder.append(",");
+		builder.append(rows);
+		builder.append(",");
+		for(ItemStack stack : stacks) {
+			builder.append(encodeStack(stack));
+		}
+		builder.append("}");
+		return builder.toString();
+	}
+	public static String getStackRenderString(String tooltip,int rows,ItemStack stack) {
+		StringBuilder builder = new StringBuilder();
+		builder.append(SpecialChars.RENDER);
+		builder.append("{gt6v.stack,");
+		builder.append(stack.getItem() instanceof ItemBlock ? 1 : 0);
+		builder.append(",");
+		builder.append(getRegistryName(stack));
+		builder.append(",");
+		builder.append(stack.stackSize);
+		builder.append(",");
+		builder.append(stack.getItemDamage());
+		builder.append("}");
+		return builder.toString();
+	}
+	
+	public static String getTankBarRenderString(FluidStack stack,int capacity) {
+		StringBuilder builder = new StringBuilder();
+		builder.append(SpecialChars.RENDER);
+		builder.append("{gt6v.tankbar,");
+		if(capacity < 1) capacity = 1;
+		if(stack != null) {
+			builder.append(stack.amount);
+			builder.append(",");
+			builder.append(stack.getFluid().getName());
+			
+			
+		}
+		else {
+			builder.append(0);
+			builder.append(",");
+			builder.append("null");
+		}
+		builder.append(",");
+		builder.append(capacity);
+		builder.append("}");
+		return builder.toString();
+	}
+	public static String getSmallTankBarRenderString(FluidStack stack,int capacity) {
+		StringBuilder builder = new StringBuilder();
+		builder.append(SpecialChars.RENDER);
+		builder.append("{gt6v.tankbar_small,");
+		if(capacity < 1) capacity = 1;
+		if(stack != null) {
+			builder.append(stack.amount);
+			builder.append(",");
+			builder.append(stack.getFluid().getName());
+			
+			
+		}
+		else {
+			builder.append(0);
+			builder.append(",");
+			builder.append("null");
+		}
+		builder.append(",");
+		builder.append(capacity);
+		builder.append("}");
+		return builder.toString();
+	}
 	
 	public static String encodeStack(ItemStack stack) {
 		if(stack == null) return null;
