@@ -46,17 +46,11 @@ public class GT6Viewer {
 	@EventHandler
 	public void postInit(FMLPostInitializationEvent event) {
 		WailaData.init();
-		VeinCommand.init();
 		
 	}
 	@EventHandler
 	public void loadComplete(FMLLoadCompleteEvent event) {
 		//logger.fatal(StoneLayer.LAYERS.size());
 	}
-    @EventHandler
-    public void serverStarting(FMLServerStartingEvent event)
-    {
-        event.registerServerCommand(new VeinCommand());
-        
-    }
+
 }
