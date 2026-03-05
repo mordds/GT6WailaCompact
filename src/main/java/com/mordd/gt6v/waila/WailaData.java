@@ -13,7 +13,7 @@ import net.minecraft.item.ItemStack;
 
 public class WailaData {
 	public static Field BOILER_TIMER = null;
-	public static Field TURBINE_OUTPUT = null;
+	//public static Field TURBINE_OUTPUT = null;
 	
 
 
@@ -22,11 +22,11 @@ public class WailaData {
 		try {
 			BOILER_TIMER = MultiTileEntityBoilerTank.class.getDeclaredField("mCoolDownResetTimer");
 			BOILER_TIMER.setAccessible(true);
-			TURBINE_OUTPUT = MultiTileEntityTurbineSteam.class.getField("mGenerated");
+			//TURBINE_OUTPUT = MultiTileEntityTurbineSteam.class.getField("mGenerated");
 		} catch (Exception e) {
 			
 		} 
-		assert BOILER_TIMER != null;
+		//assert BOILER_TIMER != null;
 	}
 			
 }

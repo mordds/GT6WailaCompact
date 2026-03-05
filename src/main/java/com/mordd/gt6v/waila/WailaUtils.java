@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+
 import com.mordd.gt6v.GT6Viewer;
 
 import cpw.mods.fml.common.registry.GameRegistry;
@@ -15,11 +17,17 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.JsonToNBT;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTTagByte;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
 public class WailaUtils {
 	public static Map<String,Integer> fluidColorBuffer = new HashMap<String,Integer>();
+	
 	
 	public static String getStackListRenderString(String tooltip,int rows,List<ItemStack> stacks) {
 		StringBuilder builder = new StringBuilder();
@@ -35,7 +43,7 @@ public class WailaUtils {
 		builder.append("}");
 		return builder.toString();
 	}
-	public static String getStackRenderString(String tooltip,int rows,ItemStack stack) {
+	public static String getStackRenderString(@Nonnull String tooltip,ItemStack stack) {
 		StringBuilder builder = new StringBuilder();
 		builder.append(SpecialChars.RENDER);
 		builder.append("{gt6v.stack,");
@@ -46,6 +54,8 @@ public class WailaUtils {
 		builder.append(stack.stackSize);
 		builder.append(",");
 		builder.append(stack.getItemDamage());
+		builder.append(",");
+		builder.append(tooltip);
 		builder.append("}");
 		return builder.toString();
 	}
@@ -106,6 +116,12 @@ public class WailaUtils {
 		builder.append(stack.stackSize);
 		builder.append("@");
 		builder.append(isBlock ? 1 : 0);
+		
+		if(stack.hasTagCompound()) {
+			builder.append("@");
+			builder.append(stack.getTagCompound().toString().replace(',', '\01').replace("}", "\02"));
+		} 
+		
 		return builder.toString();
 	}
 	public static ItemStack decodeStack(String s) {
@@ -115,12 +131,25 @@ public class WailaUtils {
 			int damage = Integer.parseInt(params[1]);
 			int count = Integer.parseInt(params[2]);
 			int mode = Integer.parseInt(params[3]);
+			NBTBase nbtbase = null;
+			if(params.length >= 5) {
+				StringBuilder builder = new StringBuilder();
+				for(int i = 4;i < params.length;i++) {
+					builder.append(params[i]);
+					if(i != params.length - 1) builder.append('@');
+				}
+				
+				nbtbase = JsonToNBT.func_150315_a(builder.toString().replace('\01', ',').replace('\02', '}'));
+			} 
+			
 			ItemStack stack = null;
 	        if (mode == 0) {
 	            stack = new ItemStack((Item) Item.itemRegistry.getObject(params[0]), count,damage);
+	            stack.setTagCompound((NBTTagCompound)nbtbase);
 	        }
 	        if (mode == 1) {
 	            stack = new ItemStack((Block) Block.blockRegistry.getObject(params[0]), count, damage);
+	            stack.setTagCompound((NBTTagCompound)nbtbase);
 	        } 
 	        return stack;
 		}

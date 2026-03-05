@@ -12,13 +12,14 @@ import cpw.mods.fml.common.event.FMLInterModComms;
 import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import gregapi.worldgen.StoneLayer;
 import net.minecraft.item.ItemStack;
 
 
-@Mod(modid=GT6Viewer.modid,name="GT6 Waila Compact",version="0.5.0",acceptableRemoteVersions = "*",dependencies="required-after:gregtech;required-after:gregapi_post;required-after:gregapi")
+@Mod(modid=GT6Viewer.modid,name="GT6 Waila Compact",version="0.6.0",acceptableRemoteVersions = "*",dependencies="required-after:gregtech;required-after:gregapi_post;required-after:gregapi")
 public class GT6Viewer {
-	public static final String version = "0.5.0";
+	public static final String version = "0.6.0";
 	public static final String modid = "gt6viewer";
 	@Mod.Instance(GT6Viewer.modid)
 	public static GT6Viewer instance;
@@ -40,13 +41,22 @@ public class GT6Viewer {
 	@EventHandler
 	public void init(FMLInitializationEvent e) {
 		myProxy.init();
+		
 	}
 	@EventHandler
 	public void postInit(FMLPostInitializationEvent event) {
 		WailaData.init();
+		VeinCommand.init();
+		
 	}
 	@EventHandler
 	public void loadComplete(FMLLoadCompleteEvent event) {
 		//logger.fatal(StoneLayer.LAYERS.size());
 	}
+    @EventHandler
+    public void serverStarting(FMLServerStartingEvent event)
+    {
+        event.registerServerCommand(new VeinCommand());
+        
+    }
 }

@@ -35,12 +35,9 @@ import net.minecraft.launchwrapper.IClassTransformer;
 
 
 public class Transformer implements IClassTransformer {
-	public static List<String> supportedClassHashes = new ArrayList<String>();
-	static {
-		supportedClassHashes.add("6154366160c9bf6955100b3f7a7b0b7f");
-	}
 	@Override
 	public byte[] transform(String name, String transformedName, byte[] basicClass) {
+		/*
 		if(name.equals("gregtech.tileentity.energy.converters.MultiTileEntityTurbineSteam")) {
 			//byte[] basicClassCopy = basicClass.clone();
 			
@@ -119,6 +116,7 @@ public class Transformer implements IClassTransformer {
 			
 			return cw.toByteArray();
 		}
+		*/
 		return basicClass;
 	}
 	
