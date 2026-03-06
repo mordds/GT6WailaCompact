@@ -39,6 +39,7 @@ import gregtech.tileentity.energy.generators.MultiTileEntityMotorLiquid;
 import gregtech.tileentity.energy.reactors.MultiTileEntityReactorCore;
 import gregtech.tileentity.misc.MultiTileEntityFluidSpring;
 import gregtech.tileentity.misc.MultiTileEntityRock;
+import gregtech.tileentity.multiblocks.MultiTileEntityCokeOven;
 import gregtech.tileentity.multiblocks.MultiTileEntityCrucible;
 import gregtech.tileentity.multiblocks.MultiTileEntityTank;
 import gregtech.tileentity.plants.MultiTileEntityBush;
@@ -78,13 +79,9 @@ import static com.mordd.gt6v.waila.WailaUtils.*;
 
 public class GT6WailaViewer implements IWailaDataProvider {
 	public static DataAccessorCommon targetAccessor = new DataAccessorCommon();
-	private static MethodType bodyMethodType = null;
 	private static HashSet<Class> forbidClass = new HashSet<Class>();
 	private static HashMap<Class,WailaBodyFunction> bodyMethods = new HashMap<>(64);
-	private static MethodHandles.Lookup lookup = null;
 	static {
-		bodyMethodType = MethodType.methodType(List.class,new Class[] {ItemStack.class,List.class,IWailaDataAccessor.class,IWailaConfigHandler.class}); 
-		lookup = MethodHandles.lookup();
 		try {
 			registerBodyMethod(MultiTileEntitySmeltery.class,GT6WailaViewer::CrucibleBody);
 			registerBodyMethod(MultiTileEntityCrucible.class,GT6WailaViewer::LargeCrucibleBody);
@@ -108,6 +105,7 @@ public class GT6WailaViewer implements IWailaDataProvider {
 			registerBodyMethod(MultiTileEntityMotorLiquid.class,GT6WailaViewer::LiquidMotorBody);
 			registerBodyMethod(MultiTileEntityReactorCore.class,GT6WailaViewer::ReactorBody);
 			registerBodyMethod(MultiTileEntityBush.class,GT6WailaViewer::BushBody);
+			registerBodyMethod(MultiTileEntityCokeOven.class,GT6WailaViewer::CokeOvenBody);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -209,17 +207,15 @@ public class GT6WailaViewer implements IWailaDataProvider {
 		else time1 = energy / output;
 		String invString = "";
 		if(fuelStack != null) {
-			boolean isBlock = fuelStack.getItem() instanceof ItemBlock;
-			int mode = isBlock ? 0 : 1;
+
 			
-			invString +=  SpecialChars.RENDER + String.format("{gt6v.stack,%d,%s,%d,%d,%s}",mode,getRegistryName(fuelStack),fuelStack.stackSize,fuelStack.getItemDamage(),I18n.format("gt6v.info.fuel"));
+			invString += WailaUtils.getStackRenderString(I18n.format("gt6v.info.fuel"), fuelStack);  
 	
 		}
 		if(ashStack != null) {
-			boolean isBlock = ashStack.getItem() instanceof ItemBlock;
-			int mode = isBlock ? 0 : 1;
+
 			if(invString.length() != 0) invString += "   ";
-			invString += SpecialChars.RENDER + String.format("{gt6v.stack,%d,%s,%d,%d,%s}",mode,getRegistryName(ashStack),ashStack.stackSize,ashStack.getItemDamage(),I18n.format("gt6v.info.ash"));	
+			invString += WailaUtils.getStackRenderString(I18n.format("gt6v.info.sah"), ashStack); 
 		}
 		currenttip.add(invString);
 		if(active) {
@@ -264,17 +260,15 @@ public class GT6WailaViewer implements IWailaDataProvider {
 
 		String invString = "";
 		if(fuelStack != null) {
-			boolean isBlock = fuelStack.getItem() instanceof ItemBlock;
-			int mode = isBlock ? 0 : 1;
+
 			
-			invString +=  SpecialChars.RENDER + String.format("{gt6v.stack,%d,%s,%d,%d,%s}",mode,getRegistryName(fuelStack),fuelStack.stackSize,fuelStack.getItemDamage(),I18n.format("gt6v.info.fuel"));
-			
+			invString += WailaUtils.getStackRenderString(I18n.format("gt6v.info.fuel"), fuelStack);  
+	
 		}
 		if(ashStack != null) {
-			boolean isBlock = ashStack.getItem() instanceof ItemBlock;
-			int mode = isBlock ? 0 : 1;
+
 			if(invString.length() != 0) invString += "   ";
-			invString += SpecialChars.RENDER + String.format("{gt6v.stack,%d,%s,%d,%d,%s}",mode,getRegistryName(ashStack),ashStack.stackSize,ashStack.getItemDamage(),I18n.format("gt6v.info.ash"));	
+			invString += WailaUtils.getStackRenderString(I18n.format("gt6v.info.sah"), ashStack); 
 		}
 		currenttip.add(invString);
 		if(active) {
@@ -439,9 +433,8 @@ public class GT6WailaViewer implements IWailaDataProvider {
 			builder.append("}");
 			if(inSlot != -1) {
 				ItemStack stack = ItemStack.loadItemStackFromNBT(list.getCompoundTagAt(inSlot));
-				boolean isBlock = stack.getItem() instanceof ItemBlock;
-				int mode = isBlock ? 0 : 1;
-				String invString = SpecialChars.RENDER + String.format("{gt6v.stack,%d,%s,%d,%d,%s}",mode,getRegistryName(stack),stack.stackSize,stack.getItemDamage(),I18n.format("gt6v.item.in"));
+				String invString = WailaUtils.getStackRenderString(I18n.format("gt6v.item.in"), stack);
+				
 				currenttip.add(invString);
 			}
 			if(inSlot == -1 || list.tagCount() > 1) {
@@ -664,10 +657,11 @@ public class GT6WailaViewer implements IWailaDataProvider {
 		NBTTagCompound nbt = accessor.getNBTData();
 		
 		NBTTagList invlist = (NBTTagList) nbt.getTag("gt.invlist");
-		if(invlist == null) return currenttip;
-		int count = invlist.tagCount();
+		int count = 0;
+		if(invlist != null) count = invlist.tagCount();
+		
 		int outIndex = -1;
-		if(count != 0) {
+		if(invlist != null && count != 0) {
 			StringBuilder builder = new StringBuilder();
 			builder.append(SpecialChars.RENDER);
 			builder.append("{gt6v.stacklist,");
@@ -687,11 +681,11 @@ public class GT6WailaViewer implements IWailaDataProvider {
 
 			if(!(count == 1 && outIndex != -1)) currenttip.add(builder.toString());
 		}
-		if(outIndex != -1) {
+		if(invlist != null && outIndex != -1) {
 			ItemStack stack = ItemStack.loadItemStackFromNBT(invlist.getCompoundTagAt(outIndex));
 			boolean isBlock = stack.getItem() instanceof ItemBlock;
 			int mode = isBlock ? 0 : 1;
-			String invString = SpecialChars.RENDER + String.format("{gt6v.stack,%d,%s,%d,%d,%s}",mode,getRegistryName(stack),stack.stackSize,stack.getItemDamage(),I18n.format("gt6v.item.out"));
+			String invString = WailaUtils.getStackRenderString(I18n.format("gt6v.item.out"), stack);
 			currenttip.add(invString);
 		}
 		for(int i = 0;i < 6;i++) {
@@ -864,22 +858,6 @@ public class GT6WailaViewer implements IWailaDataProvider {
 	}
 	
 	public static List<String> BushBody(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config){
-		/*
-		<line displayname = "生长进度">
-			if(!showProgress) return null;
-			if(nbt['gt.state'] != 3){
-				var t = nbt['gt.state'] * 256;
-				if(nbt['gt.progress'] < 0) t = t + 256;
-				t = t + nbt['gt.progress'];
-				var progress = parseInt(t * 1000 / (256 * 3)) / 10;
-				return progress + " %";
-			}
-			return AQUA + "已成熟，请收获";
-		</line>
-		<line displayname = "产出作物">
-			return nbt['gt.value']['Count'] + Unit("个 ") + name(nbt['gt.value']);
-		</line>		  
-		  */
 		NBTTagCompound nbt = accessor.getNBTData();
 		long state = nbt.getLong("gt.state");
 		long progress = nbt.getLong("gt.progress");
@@ -893,10 +871,48 @@ public class GT6WailaViewer implements IWailaDataProvider {
 			currenttip.add(I18n.format("gt6v.bush.progress", progString));
 		}
 		ItemStack stack = NBTUtils.getStackFromKey(nbt, "gt.value");
-		
+		if(stack != null) currenttip.add(WailaUtils.getStackRenderString(I18n.format("gt6v.bush.output"), stack));
 		return currenttip;
 	}
 
+
+	public static List<String> CokeOvenBody(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config){
+		NBTTagCompound nbt = accessor.getNBTData();
+		ItemStack stack;
+		List<ItemStack> stacks;
+		FluidStack fStack;
+
+
+		SlotItemStack[] inv = NBTUtils.getInventoryFromKey(nbt, "gt.invlist");
+		stack = WailaUtils.getInvStack(inv, 0);
+		if(stack != null) currenttip.add(WailaUtils.getStackRenderString(I18n.format("gt6v.item.in"), stack));
+		stacks = new ArrayList<>();
+		for(int i = 1;i < 10;i++) {
+			stack = WailaUtils.getInvStack(inv, i);
+			if(stack != null) stacks.add(stack);
+		}
+	
+		if(stacks.size() != 0) currenttip.add(WailaUtils.getStackListRenderString(I18n.format("gt6v.item.out"), 3, stacks));
+		fStack = NBTUtils.getFluidStackFromKey(nbt, "gt.tank.out.0");
+		if(fStack != null) currenttip.add(I18n.format("gt6v.cokeoven.fluid.out") + WailaUtils.getSmallTankBarRenderString(fStack, 16000));
+		if(nbt.hasKey("gt.state.str")) {
+			if(nbt.hasKey("gt.active")) { currenttip.add(I18n.format("gt6v.cokeoven.state", I18n.format("gt6v.cokeoven.state.0"))); }
+			else currenttip.add(I18n.format("gt6v.cokeoven.state", I18n.format("gt6v.cokeoven.state.1")));
+		}
+		if(nbt.hasKey("gt.progress")) {
+			currenttip.add(I18n.format("gt6v.progress",WailaUtils.getProgressString(nbt.getLong("gt.progress"), nbt.getLong("gt.maxprogress"))));
+		}
+		stacks = new ArrayList<>();
+		for(int i = 0;i < 9;i++) {
+			stack = NBTUtils.getStackFromKey(nbt, "gt.invout."+i);
+			if(stack != null) stacks.add(stack); 
+		}
+		if(stacks.size() != 0) currenttip.add(WailaUtils.getStackListRenderString(I18n.format("gt6v.progress.out"), 3, stacks));
+		fStack = NBTUtils.getFluidStackFromKey(nbt, "gt.tankout.0");
+		if(fStack != null) currenttip.add(I18n.format("gt6v.progress.out") + ":" +WailaUtils.getFluidStackString(fStack));
+		return currenttip;
+	}
+	
 	public static List<String> MultiBlockBody(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config){
 		NBTTagCompound nbt = accessor.getNBTData();
 		if(nbt.hasKey("target")) {
@@ -920,7 +936,7 @@ public class GT6WailaViewer implements IWailaDataProvider {
 				return currenttip;
 			}
 			try {
-				return handle.getBody(itemStack, currenttip, accessor, config);
+				return handle.getBody(itemStack, currenttip, targetAccessor, config);
 			} catch (Throwable e) {
 				e.printStackTrace();
 			}

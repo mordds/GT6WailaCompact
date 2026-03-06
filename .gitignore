@@ -1,2 +1,8 @@
 /.gradle/
 /build/
+/run/
+/eclipse/
+/.git
+/.settings
+/github.key
+/github.key.hub

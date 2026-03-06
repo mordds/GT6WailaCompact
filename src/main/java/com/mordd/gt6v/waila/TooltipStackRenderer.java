@@ -29,14 +29,19 @@ public class TooltipStackRenderer implements IWailaTooltipRenderer {
         int amount = Integer.valueOf(params[2]).intValue();
         int meta = Integer.valueOf(params[3]).intValue();
         ItemStack stack = null;
-        if (type == 0) {
+        if (type == 1) {
             stack = new ItemStack((Block) Block.blockRegistry.getObject(name), amount, meta);
         }
-        if (type == 1) {
+        if (type == 0) {
             stack = new ItemStack((Item) Item.itemRegistry.getObject(name), amount, meta);
         }
         RenderHelper.enableGUIStandardItemLighting();
-        DisplayUtil.renderStack(tw + 4, 0, stack);
+        if(stack != null || stack.getItem() != null) {
+        	DisplayUtil.renderStack(tw + 4, 0, stack);
+        }
+        else {
+        	System.out.println(name);
+        }
         RenderHelper.disableStandardItemLighting();
         fontRenderer.drawString(params[4], 0, 4, 0xFFFFFF,false);
     }

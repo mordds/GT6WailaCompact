@@ -1,6 +1,7 @@
 package com.mordd.gt6v.waila;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import cpw.mods.fml.common.registry.GameRegistry.UniqueIdentifier;
 import mcp.mobius.waila.api.SpecialChars;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
@@ -24,6 +26,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
+import scala.Int;
 
 public class WailaUtils {
 	public static Map<String,Integer> fluidColorBuffer = new HashMap<String,Integer>();
@@ -39,7 +42,9 @@ public class WailaUtils {
 		builder.append(",");
 		for(ItemStack stack : stacks) {
 			builder.append(encodeStack(stack));
+			builder.append(",");
 		}
+		builder.deleteCharAt(builder.length() - 1);
 		builder.append("}");
 		return builder.toString();
 	}
@@ -59,6 +64,25 @@ public class WailaUtils {
 		builder.append("}");
 		return builder.toString();
 	}
+	public static String getInventorySlotString(SlotItemStack[] inv,int slot,String locKey) {
+		for(int i = 0;i < inv.length;i++) {
+			if(inv[i].slot == slot) {
+				return I18n.format(locKey,i,getStackString(inv[i].stack));
+			}
+		}
+		return null;
+	}
+	public static String getStackString(ItemStack stack) {
+		if(stack == null) return null;
+		return String.format("%dx %s", stack.stackSize, I18n.format(stack.getUnlocalizedName()+".name"));
+	}
+	public static ItemStack getInvStack(SlotItemStack[] inv,int slot) {
+		if(inv == null) return null;
+		for(int i = 0;i < inv.length;i++) {
+			if(inv[i].slot == slot) return inv[i].stack;
+		}
+		return null;
+	}
 	
 	public static String getTankBarRenderString(FluidStack stack,int capacity) {
 		StringBuilder builder = new StringBuilder();
@@ -69,8 +93,6 @@ public class WailaUtils {
 			builder.append(stack.amount);
 			builder.append(",");
 			builder.append(stack.getFluid().getName());
-			
-			
 		}
 		else {
 			builder.append(0);
@@ -104,7 +126,16 @@ public class WailaUtils {
 		builder.append("}");
 		return builder.toString();
 	}
-	
+	public static String getProgressString(long current_tick,long max_tick) {
+		double progress = current_tick * 1000 / max_tick / 10.0;
+		if(max_tick < 20) return I18n.format("gt6v.progress.1", current_tick,max_tick,progress);
+		if(max_tick < 6000) return I18n.format("gt6v.progress.2", current_tick / 20,max_tick / 20,progress);
+		else return I18n.format("gt6v.progress.3", current_tick / 1200,(current_tick % 1200) / 20,max_tick / 1200,(max_tick % 1200) / 20,progress);
+	}
+	public static String getFluidStackString(FluidStack stack) {
+		if(stack == null) return null;
+		return String.format("%dL %s", stack.amount,stack.getLocalizedName());
+	}
 	public static String encodeStack(ItemStack stack) {
 		if(stack == null) return null;
 		StringBuilder builder = new StringBuilder();
